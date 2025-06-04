@@ -41,7 +41,11 @@ export default function Home() {
             onChange={(e) => setSearchText(e.target.value)}
             type="text"
             placeholder={`Search by patient ${
-              selectedOption === "dob" ? "date of birth" : selectedOption
+              selectedOption === "dob"
+                ? "date of birth"
+                : selectedOption === "recordId"
+                ? "patient id"
+                : selectedOption
             }`}
             className="flex-1 px-4 py-2 border bg-white focus:ring-2 focus:ring-blue-400 border-gray-300 rounded-xl shadow-sm focus:outline-none"
           />
