@@ -1,4 +1,4 @@
-'use client'
+"use client";
 import React, { useEffect, useState } from "react";
 import {
   Table,
@@ -10,14 +10,20 @@ import {
   Pagination,
   getKeyValue,
   Spinner,
+  useDisclosure,
 } from "@heroui/react";
 import Image from "next/image";
+import toast from "react-hot-toast";
+import { useRouter } from "next/navigation";
+import { UrlObject } from "url";
+import ViewpdfModal from "./view-pdf";
+
 type DataTableProps = {
   searchField: string;
   searchText: string;
   loading: boolean;
   setIsloading: any;
-}
+};
 export default function DataTable({
   searchField,
   searchText,
@@ -30,16 +36,21 @@ export default function DataTable({
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
   const [prevSearchText, setPrevSearchText] = useState("");
   const [prevSearchField, setPrevSearchField] = useState("");
-
+  const router = useRouter();
+const [filePath,setFilePath]=useState('')
   // Detect new search and reset page to 1
   useEffect(() => {
     const trimmedSearch = searchText?.trim();
-    if (trimmedSearch !== prevSearchText || searchField !== prevSearchField||rowsPerPage) {
-      setPrevSearchText(trimmedSearch||"");
-      setPrevSearchField(searchField||"");
+    if (
+      trimmedSearch !== prevSearchText ||
+      searchField !== prevSearchField ||
+      rowsPerPage
+    ) {
+      setPrevSearchText(trimmedSearch || "");
+      setPrevSearchField(searchField || "");
       setPage(1);
     }
-  }, [searchText, searchField,rowsPerPage]);
+  }, [searchText, searchField, rowsPerPage]);
   const getAllFiles = async (
     page: number,
     rowsPerPage: number,
@@ -51,7 +62,7 @@ export default function DataTable({
     const timeoutId = setTimeout(() => {
       controller.abort();
     }, 120000);
-  
+
     try {
       // Base URL
       let url = `${process.env.NEXT_PUBLIC_URL}/api/files?page=${page}&limit=${rowsPerPage}`;
@@ -59,30 +70,37 @@ export default function DataTable({
       if (searchText.trim()) {
         url = `${
           process.env.NEXT_PUBLIC_URL
-        }/api/search?${searchField}=${encodeURIComponent(
+        }/api/files/search?${searchField}=${encodeURIComponent(
           searchText.trim()
         )}&page=${page}&limit=${rowsPerPage}`;
-        setPage(1)
+        setPage(1);
       }
+      const token = localStorage.getItem("token");
+      if (token) {
+        const response = await fetch(url, {
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        });
+        clearTimeout(timeoutId);
+        if (!response.ok) {
+          throw new Error("Failed to fetch files");
+        }
 
-      const response = await fetch(url, {
-        headers: {
-          "ngrok-skip-browser-warning": "true",
-        },
-      });
-      clearTimeout(timeoutId);
-      if (!response.ok) {
-        throw new Error("Failed to fetch files");
+        const data = await response.json();
+        setPages(Math.ceil(data?.total / rowsPerPage));
+        const updatedData = data?.results.map((file: any, index: number) => ({
+          ...file,
+          sr: (page - 1) * rowsPerPage + index + 1, // Calculate SR based on current page and rowsPerPage
+        }));
+
+        setData(updatedData);
+      } else {
+        toast.error("Your session has been expired please login again!");
+        router.push("/login");
       }
-
-      const data = await response.json();
-      setPages(Math.ceil(data?.total / rowsPerPage));
-      const updatedData = data?.results.map((file:any, index:number) => ({
-        ...file,
-        sr: (page - 1) * rowsPerPage + index + 1, // Calculate SR based on current page and rowsPerPage
-      }));
-  
-      setData(updatedData); 
       // setData(data?.results);
     } catch (error) {
       console.error("Error fetching files:", error);
@@ -94,14 +112,46 @@ export default function DataTable({
   };
 
   useEffect(() => {
-    getAllFiles(page, rowsPerPage, searchField||"", searchText||"");
-  }, [page, searchText, rowsPerPage,searchField]);
+    getAllFiles(page, rowsPerPage, searchField || "", searchText || "");
+  }, [page, searchText, rowsPerPage, searchField]);
   const handleChange = (e: any) => {
     setRowsPerPage(Number(e.target.value));
   };
   useEffect(() => {
-    setPage(1); 
+    setPage(1);
   }, [rowsPerPage]);
+  const {
+    isOpen: isAddOpen,
+    onOpen: onAddOpen,
+    onOpenChange: onAddOpenChange,
+  } = useDisclosure();
+
+  const closeModal = () => {
+    onAddOpenChange();
+    setFilePath('')
+  };
+  const handleFileOpen=async(path:string)=>{
+    try {
+      setFilePath(`${process.env.NEXT_PUBLIC_URL}/${path}`)
+      let url = `${process.env.NEXT_PUBLIC_URL}/api/files/activity`;
+      const token = localStorage.getItem("token");
+      if (token) {
+         await fetch(url, {
+          method: "POST", 
+          headers: {
+            "ngrok-skip-browser-warning": "true",
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({ filePath: path }), // ✅ corrected
+        });}
+    } catch (error) {
+      console.log('error')
+    }
+    finally{
+      onAddOpen()
+    }
+  }
   return (
     <div className="flex flex-col h-[calc(100vh-145px)] gap-3 relative">
       <Table
@@ -115,7 +165,7 @@ export default function DataTable({
         }}
       >
         <TableHeader>
-        <TableColumn className="" key="sr">
+          <TableColumn className="" key="sr">
             Sr.
           </TableColumn>
           <TableColumn className="" key="recordId">
@@ -144,33 +194,40 @@ export default function DataTable({
           {(item: any) => (
             <TableRow
               key={item?._id}
-              onClick={() => {
-                if (item.path) {
-                  window.open(
-                    `${process.env.NEXT_PUBLIC_URL}/${item.path}`,
-                    "_blank",
-                    "noopener,noreferrer"
-                  );
-                }
-              }}
+              // onClick={() => {
+              //   if (item.path) {
+              //     window.open(
+              //       `${process.env.NEXT_PUBLIC_URL}/${item.path}`,
+              //       "_blank",
+              //       "noopener,noreferrer"
+              //     );
+              //   }
+              // }}
+              onClick={() =>{
+                handleFileOpen(item.path)
+               
+              }
+              }
               className="cursor-pointer"
             >
               {(columnKey) => (
                 <TableCell>
-                  
-                  {
-                     columnKey === "recordId" && item?.recordId ? (
+                  {columnKey === "recordId" && item?.recordId ? (
                     <span> {item?.recordId}</span>
-                    )
-                  :
-                  columnKey === "filename" && item.path ? (
+                  ) : columnKey === "filename" && item.path ? (
                     <a
                       href={`${process.env.NEXT_PUBLIC_URL}/${item.path}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-blue-500"
                     >
-                      <Image src={'/images/pdf-logo.svg'} width={23} height={23} alt="pdf" className="ml-0.5 h-auto"/>
+                      <Image
+                        src={"/images/pdf-logo.svg"}
+                        width={23}
+                        height={23}
+                        alt="pdf"
+                        className="ml-0.5 h-auto"
+                      />
                     </a>
                   ) : (
                     getKeyValue(item, columnKey)
@@ -213,6 +270,13 @@ export default function DataTable({
           </select>
         </div>
       </div>
+      {isAddOpen&&
+        <ViewpdfModal 
+        isOpen={isAddOpen}
+        filePath={filePath}
+        closeAddModal={closeModal}
+        />
+      }
     </div>
   );
 }

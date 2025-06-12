@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { HeroUiProvider } from "./providers/Herouiproviders";
+import { AuthProvider } from "./context/AuthContext";
+import { Toaster } from "react-hot-toast";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,8 +29,34 @@ export default function RootLayout({
     <html lang="en">
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning={true}
       >
-        <HeroUiProvider>{children}</HeroUiProvider>
+        <HeroUiProvider>
+        <Toaster
+            position="top-right"
+            reverseOrder={false}
+            toastOptions={{
+              style: {
+                fontSize: "14px",
+                fontWeight: 400,
+              },
+
+              success: {
+                style: {
+                  color: "#03A822",
+                },
+              },
+              error: {
+                style: {
+                  color: "#FD4755",
+                },
+              },
+            }}
+          />
+          <AuthProvider>
+          {children}
+          </AuthProvider>
+          </HeroUiProvider>
       </body>
     </html>
   );
