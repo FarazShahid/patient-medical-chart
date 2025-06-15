@@ -1,6 +1,13 @@
 "use client";
 
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+  useRef,
+} from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
 
@@ -10,13 +17,17 @@ interface AuthContextType {
   token: string | null;
   loading: boolean;
   error: string | null;
-  login: (credentials: { email: string; password: string }) => Promise<string | null | undefined  >;
+  login: (credentials: {
+    email: string;
+    password: string;
+  }) => Promise<string | null | undefined>;
   logout: () => void;
 }
 
 interface User {
   email: string;
-  // Add other user properties as needed
+  username: string;
+  role: any;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -28,17 +39,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const router = useRouter();
+  const toastShownRef = useRef(false);
 
   // Initialize auth state from localStorage
   useEffect(() => {
     const initializeAuth = async () => {
       const storedToken = localStorage.getItem("token");
-      const storedUser = localStorage.getItem("user");
+      const storedEmail = localStorage.getItem("email");
+      const storedUsername = localStorage.getItem("username");
+      const storedRoleId = localStorage.getItem("role");
 
-      if (storedToken && storedUser) {
+      if (storedToken && storedEmail && storedUsername && storedRoleId) {
         setToken(storedToken);
-        setUser(JSON.parse(storedUser));
+        setUser({
+          email: storedEmail,
+          username: storedUsername,
+          role:  storedRoleId, // ✅ restore role
+        });
         setIsAuthenticated(true);
+      } else {
+        if (
+          !toastShownRef.current &&
+          typeof window !== "undefined" &&
+          !window.location.pathname.includes("/login")
+        ) {
+          toastShownRef.current = true;
+          toast.error("Your session has expired. Please log in again.");
+          router.replace("/login");
+        }
       }
     };
 
@@ -61,15 +89,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       if (response.status === 200 || response.status === 201) {
         const data = await response.json();
-        const { token, email, username } = data;
+        const { token, email, username, role } = data;
         localStorage.setItem("token", token);
         localStorage.setItem("email", email);
         localStorage.setItem("username", username);
+        localStorage.setItem("role", role.name.toString());
+
         setToken(token);
         setIsAuthenticated(true);
         setLoading(false);
+        setUser({ email, username, role });
         toast.success("Login successful!");
-        router.push("/patient-records");
+        router.push("/");
       } else if (response.status === 307) {
         const data = await response.json();
         setLoading(false);
@@ -92,8 +123,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = () => {
     // Clear all auth-related data
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    localStorage.clear();
     setToken(null);
     setUser(null);
     setIsAuthenticated(false);

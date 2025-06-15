@@ -22,7 +22,7 @@ export default function NotFound() {
             Go Back
           </Button>
           <Button
-            onClick={() => router.push("/patient-records")}
+            onClick={() => router.push("/")}
             className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700"
           >
             Return Home

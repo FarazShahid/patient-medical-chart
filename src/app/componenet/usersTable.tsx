@@ -11,20 +11,22 @@ import {
   getKeyValue,
   Spinner,
   useDisclosure,
+  Button,
 } from "@heroui/react";
 import Image from "next/image";
 import toast from "react-hot-toast";
 import { useRouter } from "next/navigation";
 import ViewpdfModal from "./view-pdf";
-
+import EditIcon from "../../../public/editIcon.svg";
+import DeleteIcon from "../../../public/deleteIcon.svg";
+import DeleteUserModal from "../componenet/model/deleteUserModal";
+import UserEditModal from "./model/addEditUser";
 type DataTableProps = {
-  searchField: string;
   searchText: string;
   loading: boolean;
   setIsloading: any;
 };
 export default function DataTable({
-  searchField,
   searchText,
   loading,
   setIsloading,
@@ -34,27 +36,24 @@ export default function DataTable({
   const [data, setData] = useState<any>([]);
   const [rowsPerPage, setRowsPerPage] = React.useState(25);
   const [prevSearchText, setPrevSearchText] = useState("");
-  const [prevSearchField, setPrevSearchField] = useState("");
   const [totalRecord, setTotalRecord] = useState(0);
   const router = useRouter();
-  const [filePath, setFilePath] = useState("");
+  const [isEdit, setIsEdit] = useState(false);
+  const [selectedId, setSelectedId] = useState<number | null>(null);
+  const [getUserTrigger, setUserTrigger] = useState<number>(0);
+  const triggerGetUser = () => setUserTrigger((prev) => prev + 1);
+  const role = localStorage.getItem("role");
   // Detect new search and reset page to 1
   useEffect(() => {
     const trimmedSearch = searchText?.trim();
-    if (
-      trimmedSearch !== prevSearchText ||
-      searchField !== prevSearchField ||
-      rowsPerPage
-    ) {
+    if (trimmedSearch !== prevSearchText || rowsPerPage) {
       setPrevSearchText(trimmedSearch || "");
-      setPrevSearchField(searchField || "");
       setPage(1);
     }
-  }, [searchText, searchField, rowsPerPage]);
-  const getAllFiles = async (
+  }, [searchText, rowsPerPage]);
+  const getAllUsers = async (
     page: number,
     rowsPerPage: number,
-    searchField: string,
     searchText: string
   ) => {
     setIsloading(true);
@@ -65,12 +64,12 @@ export default function DataTable({
 
     try {
       // Base URL
-      let url = `${process.env.NEXT_PUBLIC_URL}/api/files?page=${page}&limit=${rowsPerPage}`;
+      let url = `${process.env.NEXT_PUBLIC_URL}/api/users?page=${page}&limit=${rowsPerPage}`;
       // Add search only if searchText is present
       if (searchText.trim()) {
         url = `${
           process.env.NEXT_PUBLIC_URL
-        }/api/files/search?${searchField}=${encodeURIComponent(
+        }/api/users?search=${encodeURIComponent(
           searchText.trim()
         )}&page=${page}&limit=${rowsPerPage}`;
         setPage(1);
@@ -92,7 +91,7 @@ export default function DataTable({
         const data = await response.json();
         setTotalRecord(data?.total);
         setPages(Math.ceil(data?.total / rowsPerPage));
-        const updatedData = data?.results.map((file: any, index: number) => ({
+        const updatedData = data?.users.map((file: any, index: number) => ({
           ...file,
           sr: (page - 1) * rowsPerPage + index + 1, // Calculate SR based on current page and rowsPerPage
         }));
@@ -112,8 +111,8 @@ export default function DataTable({
   };
 
   useEffect(() => {
-    getAllFiles(page, rowsPerPage, searchField || "", searchText || "");
-  }, [page, searchText, rowsPerPage, searchField]);
+    getAllUsers(page, rowsPerPage, searchText || "");
+  }, [page, searchText, rowsPerPage, getUserTrigger]);
   const handleChange = (e: any) => {
     setRowsPerPage(Number(e.target.value));
   };
@@ -125,35 +124,83 @@ export default function DataTable({
     onOpen: onAddOpen,
     onOpenChange: onAddOpenChange,
   } = useDisclosure();
-
+  const {
+    isOpen: isDeleteOpen,
+    onOpen: onDeleteOpen,
+    onOpenChange: onDeleteOpenChange,
+  } = useDisclosure();
   const closeModal = () => {
     onAddOpenChange();
-    setFilePath("");
+    // setFilePath("");
   };
-  const handleFileOpen = async (path: string) => {
+  const handleDeleteOpen = (item: any) => {
+    setSelectedId(item._id);
+    onDeleteOpen();
+  };
+  const handleUpdateModal = (isEdit: boolean, item?: any) => {
+    if (item) {
+      setSelectedId(item._id);
+    }
+    setIsEdit(isEdit);
+    onAddOpen();
+  };
+  const handleToggleActive = async (item: any) => {
     try {
-      setFilePath(`${process.env.NEXT_PUBLIC_URL}/${path}`);
-      let url = `${process.env.NEXT_PUBLIC_URL}/api/files/activity`;
+        setIsloading(true)
       const token = localStorage.getItem("token");
-      if (token) {
-        await fetch(url, {
-          method: "POST",
+      const updatedStatus = !item.isActive;
+  
+      const res = await fetch(
+        `${process.env.NEXT_PUBLIC_URL}/api/users/${item._id}/change-status`,
+        {
+          method: "PUT",
           headers: {
             "ngrok-skip-browser-warning": "true",
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
-          body: JSON.stringify({ filePath: path }), // ✅ corrected
-        });
+          body: JSON.stringify({ isActive: updatedStatus }),
+        }
+      );
+  
+      const result = await res.json();
+  
+      if (!res.ok) {
+        throw new Error(result.message || "Failed to update status");
       }
-    } catch (error) {
-      console.log("error");
-    } finally {
-      onAddOpen();
+  
+      toast.success(result.message || "Status updated");
+      triggerGetUser(); // reload table
+    } catch (error: any) {
+      toast.error(error.message || "Error toggling status");
+    }
+    finally{
+        setIsloading(false)
+
     }
   };
+  
+  
   return (
     <div className="flex flex-col h-[calc(100vh-145px)] gap-3 relative">
+      <div className="flex justify-between items-center">
+        <h1
+          className="text-[30px] text-black font-semibold ml-3"
+          style={{ fontFamily: "Proto, sans-serif" }}
+        >
+          Users
+        </h1>
+        {(role == "admin" || role == "Admin" || role == "ADMIN") && (
+          <Button
+            className="bg-[#1d76a1] text-white cursor-pointer"
+            onPress={() => {
+              handleUpdateModal(false);
+            }}
+          >
+            Add new user
+          </Button>
+        )}
+      </div>
       <Table
         isHeaderSticky={true}
         isStriped
@@ -168,67 +215,90 @@ export default function DataTable({
           <TableColumn className="" key="sr">
             Sr.
           </TableColumn>
-          <TableColumn className="" key="recordId">
-            Patient ID
+          <TableColumn className="" key="username">
+            Name
           </TableColumn>
-          <TableColumn className="" key="name">
-            NAME
+          <TableColumn className="" key="email">
+            Email
           </TableColumn>
-          <TableColumn className="" key="dob">
-            DOB
+          <TableColumn className="" key="isActive">
+            Status
           </TableColumn>
-          <TableColumn className="" key="address">
-            Address
-          </TableColumn>
-          <TableColumn className="" key="filename">
-            Document
-          </TableColumn>
+          {role == "admin" || role == "Admin" || role == "ADMIN" ? (
+            <TableColumn key="Action" className=" text-right w-[80px] ">
+              Actions
+            </TableColumn>
+          ) : (
+            <></>
+          )}
         </TableHeader>
         <TableBody
           isLoading={loading}
           loadingContent={<Spinner></Spinner>}
-          // isLoading={loading}
           items={data}
           emptyContent={"No data found"}
         >
           {(item: any) => (
-            <TableRow
-              key={item?._id}
-              // onClick={() => {
-              //   if (item.path) {
-              //     window.open(
-              //       `${process.env.NEXT_PUBLIC_URL}/${item.path}`,
-              //       "_blank",
-              //       "noopener,noreferrer"
-              //     );
-              //   }
-              // }}
-              onClick={() => {
-                handleFileOpen(item.path);
-              }}
-              className="cursor-pointer"
-            >
+            <TableRow key={item?._id} className="">
               {(columnKey) => (
                 <TableCell>
-                  {columnKey === "recordId" && item?.recordId ? (
-                    <span> {item?.recordId}</span>
-                  ) : columnKey === "filename" && item.path ? (
-                    <a
-                      href={`${process.env.NEXT_PUBLIC_URL}/${item.path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500"
-                    >
-                      <Image
-                        src={"/images/pdf-logo.svg"}
-                        width={23}
-                        height={23}
-                        alt="pdf"
-                        className="ml-0.5 h-auto"
-                      />
-                    </a>
-                  ) : (
+                  {columnKey === "isActive"  ? (
+                   <label className="inline-flex items-center cursor-pointer">
+                   <input
+                     type="checkbox"
+                     className="sr-only"
+                     checked={item.isActive}
+                     onChange={() => handleToggleActive(item)}
+                   />
+                   <span
+                     className={`w-10 h-5 block rounded-full relative transition-colors duration-300 ${
+                       item.isActive ? "bg-green-500" : "bg-red-500"
+                     }`}
+                   >
+                     <span
+                       className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${
+                         item.isActive ? "translate-x-5" : "translate-x-0"
+                       }`}
+                     />
+                   </span>
+                 </label>
+                 
+                 
+                  ) : columnKey !== "Action" ? (
                     getKeyValue(item, columnKey)
+                  ) : (
+                    <div className="flex justify-center items-center gap-4 ">
+                      {(role == "admin" ||
+                        role == "Admin" ||
+                        role == "ADMIN") && (
+                        <>
+                          <button
+                            type="button"
+                            className="cursor-pointer hover:text-green-800"
+                          >
+                            <Image
+                              src={EditIcon}
+                              alt="Image not found"
+                              width={14}
+                              height={14}
+                              onClick={() => handleUpdateModal(true, item)}
+                            />
+                          </button>
+                          <button
+                            type="button"
+                            className="cursor-pointer hover:text-red-500"
+                            onClick={() => handleDeleteOpen(item)}
+                          >
+                            <Image
+                              src={DeleteIcon}
+                              alt="Image not found"
+                              width={14}
+                              height={14}
+                            />
+                          </button>
+                        </>
+                      )}
+                    </div>
                   )}
                 </TableCell>
               )}
@@ -282,11 +352,25 @@ export default function DataTable({
           </select>
         </div>
       </div>
+      {isDeleteOpen && (
+        <DeleteUserModal
+          isOpen={isDeleteOpen}
+          onClose={onDeleteOpenChange}
+          triggerAnnouncement={triggerGetUser}
+          itemId={selectedId}
+          setSelectedId={setSelectedId}
+          setIsLoading={setIsloading}
+        />
+      )}
       {isAddOpen && (
-        <ViewpdfModal
+        <UserEditModal
           isOpen={isAddOpen}
-          filePath={filePath}
-          closeAddModal={closeModal}
+          onClose={onAddOpenChange}
+          triggerAnnouncement={triggerGetUser}
+          itemId={selectedId}
+          setSelectedId={setSelectedId}
+          setIsLoading={setIsloading}
+          isEdit={isEdit}
         />
       )}
     </div>

@@ -1,10 +1,7 @@
 import LoginForm from "../componenet/loginForm";
-import PublicLayout from "../layout";
 
-export default function page() {
+export default function Page() {
   return (
-    <PublicLayout >
       <LoginForm />
-    </PublicLayout>
   );
 }
