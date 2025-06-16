@@ -1,4 +1,5 @@
 "use client";
+
 import Image from "next/image";
 import DataTable from "../componenet/usersTable";
 import { useEffect, useState } from "react";
@@ -10,8 +11,17 @@ export default function Home() {
   const [searchText, setSearchText] = useState<any>("");
   const [debouncedSearch, setDebouncedSearch] = useState<any>("");
   const [loading, setIsloading] = useState(false);
-  const { logout, user } = useAuth();
-  const role = localStorage.getItem("role");
+  const { logout } = useAuth();
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedrole = localStorage.getItem("role");
+      if (savedrole) {
+        setRole(savedrole);
+      }
+    }
+  }, []);
   const router = useRouter();
   useEffect(() => {
     const handler = setTimeout(() => {
@@ -42,7 +52,8 @@ export default function Home() {
                 alt="PDF Viewer Logo"
                 width={70}
                 height={70}
-                className="object-contain"
+                className="object-contain cursor-pointer"
+                onClick={()=>{router.push('/')}}
               />
             </div>
 

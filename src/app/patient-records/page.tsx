@@ -14,7 +14,14 @@ export default function Home() {
   const [loading, setIsloading] = useState(false);
   const { logout } = useAuth();
   const router = useRouter();
-  const role = localStorage.getItem("role");
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+      const savedrole = localStorage.getItem("role");
+    if (savedrole) {
+        setRole(savedrole);
+    }
+  }, []);
   useEffect(() => {
     const handler = setTimeout(() => {
       if (searchText.length >= 3) {

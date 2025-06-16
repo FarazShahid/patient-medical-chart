@@ -42,7 +42,16 @@ export default function DataTable({
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [getUserTrigger, setUserTrigger] = useState<number>(0);
   const triggerGetUser = () => setUserTrigger((prev) => prev + 1);
-  const role = localStorage.getItem("role");
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const savedrole = localStorage.getItem("role");
+      if (savedrole) {
+        setRole(savedrole);
+      }
+    }
+  }, []);
   // Detect new search and reset page to 1
   useEffect(() => {
     const trimmedSearch = searchText?.trim();
@@ -91,12 +100,13 @@ export default function DataTable({
         const data = await response.json();
         setTotalRecord(data?.total);
         setPages(Math.ceil(data?.total / rowsPerPage));
-        const updatedData = data?.users.map((file: any, index: number) => ({
+        const updatedData = data?.users?.map((file: any, index: number) => ({
           ...file,
           sr: (page - 1) * rowsPerPage + index + 1, // Calculate SR based on current page and rowsPerPage
         }));
-
-        setData(updatedData);
+        if (updatedData) {
+          setData(updatedData);
+        }
       } else {
         router.push("/login");
       }
@@ -146,10 +156,10 @@ export default function DataTable({
   };
   const handleToggleActive = async (item: any) => {
     try {
-        setIsloading(true)
+      setIsloading(true);
       const token = localStorage.getItem("token");
       const updatedStatus = !item.isActive;
-  
+
       const res = await fetch(
         `${process.env.NEXT_PUBLIC_URL}/api/users/${item._id}/change-status`,
         {
@@ -162,25 +172,22 @@ export default function DataTable({
           body: JSON.stringify({ isActive: updatedStatus }),
         }
       );
-  
+
       const result = await res.json();
-  
+
       if (!res.ok) {
         throw new Error(result.message || "Failed to update status");
       }
-  
+
       toast.success(result.message || "Status updated");
       triggerGetUser(); // reload table
     } catch (error: any) {
       toast.error(error.message || "Error toggling status");
-    }
-    finally{
-        setIsloading(false)
-
+    } finally {
+      setIsloading(false);
     }
   };
-  
-  
+
   return (
     <div className="flex flex-col h-[calc(100vh-145px)] gap-3 relative">
       <div className="flex justify-between items-center">
@@ -221,6 +228,9 @@ export default function DataTable({
           <TableColumn className="" key="email">
             Email
           </TableColumn>
+          <TableColumn className="" key="role">
+            Role
+          </TableColumn>
           <TableColumn className="" key="isActive">
             Status
           </TableColumn>
@@ -242,28 +252,28 @@ export default function DataTable({
             <TableRow key={item?._id} className="">
               {(columnKey) => (
                 <TableCell>
-                  {columnKey === "isActive"  ? (
-                   <label className="inline-flex items-center cursor-pointer">
-                   <input
-                     type="checkbox"
-                     className="sr-only"
-                     checked={item.isActive}
-                     onChange={() => handleToggleActive(item)}
-                   />
-                   <span
-                     className={`w-10 h-5 block rounded-full relative transition-colors duration-300 ${
-                       item.isActive ? "bg-green-500" : "bg-red-500"
-                     }`}
-                   >
-                     <span
-                       className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${
-                         item.isActive ? "translate-x-5" : "translate-x-0"
-                       }`}
-                     />
-                   </span>
-                 </label>
-                 
-                 
+                  {columnKey === "isActive" ? (
+                    <label className="inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        className="sr-only"
+                        checked={item.isActive}
+                        onChange={() => handleToggleActive(item)}
+                      />
+                      <span
+                        className={`w-10 h-5 block rounded-full relative transition-colors duration-300 ${
+                          item.isActive ? "bg-green-500" : "bg-red-500"
+                        }`}
+                      >
+                        <span
+                          className={`absolute top-0.5 left-0.5 w-4 h-4 bg-white rounded-full transition-transform duration-300 ${
+                            item.isActive ? "translate-x-5" : "translate-x-0"
+                          }`}
+                        />
+                      </span>
+                    </label>
+                  ) : columnKey === "role" ? (
+                    <span className="capitalize">{item?.role?.name ?? ""}</span>
                   ) : columnKey !== "Action" ? (
                     getKeyValue(item, columnKey)
                   ) : (

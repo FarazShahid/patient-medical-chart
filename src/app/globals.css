@@ -87,3 +87,16 @@ body {
 .toggle-checkbox:checked::before {
   transform: translateX(20px);
 }
+[data-nextjs-dev-overlay] {
+  display: none !important;
+}
+
+#nextjs__dev-overlay,
+#__next-prerender-indicator {
+  display: none !important;
+}
+[data-nextjs-dev-overlay],
+#nextjs__dev-overlay,
+#__next-prerender-indicator {
+  display: none !important;
+}

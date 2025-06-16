@@ -1,17 +1,3 @@
-// "use client";
-
-// import { useRouter } from "next/navigation";
-// import { useEffect } from "react";
-
-// export default function Home() {
-//   const router = useRouter();
-
-//   useEffect(() => {
-//     router.push("/login");
-//   }, [router]);
-
-//   return null;
-// }
 "use client";
 import Image from "next/image";
 import DataTable from "./componenet/table";
@@ -20,7 +6,6 @@ import { Button } from "@nextui-org/react";
 import { useAuth } from "./context/AuthContext";
 import { useRouter } from "next/navigation";
 import { IoSettingsSharp } from "react-icons/io5";
-import toast from "react-hot-toast";
 
 export default function Home() {
   const [selectedOption, setSelectedOption] = useState<any>("name");
@@ -29,7 +14,14 @@ export default function Home() {
   const [loading, setIsloading] = useState(false);
   const { logout } = useAuth();
   const router = useRouter();
-  const role = localStorage.getItem("role");
+  const [role, setRole] = useState("");
+
+  useEffect(() => {
+      const savedrole = localStorage.getItem("role");
+    if (savedrole) {
+        setRole(savedrole);
+    }
+  }, []);
   useEffect(() => {
     const handler = setTimeout(() => {
       if (searchText.length >= 3) {
@@ -59,7 +51,8 @@ export default function Home() {
                 alt="PDF Viewer Logo"
                 width={70}
                 height={70}
-                className="object-contain"
+                className="object-contain cursor-pointer"
+                onClick={()=>{router.push('/')}}
               />
             </div>
 

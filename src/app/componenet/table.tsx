@@ -172,7 +172,7 @@ export default function DataTable({
             Patient ID
           </TableColumn>
           <TableColumn className="" key="name">
-            NAME
+            Name
           </TableColumn>
           <TableColumn className="" key="dob">
             DOB
