@@ -51,7 +51,7 @@ const UserEditModal = ({
         // setUser(data.user);
         setUsername(data?.username);
         setEmail(data?.email);
-        setRole(data?.role?.name);
+        setRole(data?.role?.role_id);
         setOldPassword(data?.password)
       } catch (error) {
         console.error("Failed to fetch user", error);
