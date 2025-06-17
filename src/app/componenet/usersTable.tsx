@@ -87,7 +87,6 @@ export default function DataTable({
       if (token) {
         const response = await fetch(url, {
           headers: {
-            "ngrok-skip-browser-warning": "true",
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
@@ -165,7 +164,6 @@ export default function DataTable({
         {
           method: "PUT",
           headers: {
-            "ngrok-skip-browser-warning": "true",
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },

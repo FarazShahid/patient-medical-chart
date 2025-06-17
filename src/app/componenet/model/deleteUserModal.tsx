@@ -25,7 +25,6 @@ const DeleteModal = ({
         {
           method: "DELETE",
           headers: {
-            "ngrok-skip-browser-warning": "true",
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },

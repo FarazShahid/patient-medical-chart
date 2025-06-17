@@ -42,7 +42,7 @@ const UserEditModal = ({
           {
             headers: {
               Authorization: `Bearer ${token}`,
-              "ngrok-skip-browser-warning": "true",
+              "Content-Type": "application/json",
             },
           }
         );
@@ -83,7 +83,6 @@ const UserEditModal = ({
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
           },
           body: JSON.stringify({
             username,
@@ -129,7 +128,6 @@ const UserEditModal = ({
           headers: {
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
-            "ngrok-skip-browser-warning": "true",
           },
           body: JSON.stringify({
             email,

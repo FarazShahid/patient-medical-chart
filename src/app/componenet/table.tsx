@@ -79,7 +79,6 @@ export default function DataTable({
       if (token) {
         const response = await fetch(url, {
           headers: {
-            "ngrok-skip-browser-warning": "true",
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
@@ -139,7 +138,6 @@ export default function DataTable({
         await fetch(url, {
           method: "POST",
           headers: {
-            "ngrok-skip-browser-warning": "true",
             Authorization: `Bearer ${token}`,
             "Content-Type": "application/json",
           },
@@ -213,12 +211,6 @@ export default function DataTable({
                   {columnKey === "recordId" && item?.recordId ? (
                     <span> {item?.recordId}</span>
                   ) : columnKey === "filename" && item.path ? (
-                    <a
-                      href={`${process.env.NEXT_PUBLIC_URL}/${item.path}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-blue-500"
-                    >
                       <Image
                         src={"/images/pdf-logo.svg"}
                         width={23}
@@ -226,7 +218,6 @@ export default function DataTable({
                         alt="pdf"
                         className="ml-0.5 h-auto"
                       />
-                    </a>
                   ) : (
                     getKeyValue(item, columnKey)
                   )}
