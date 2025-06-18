@@ -15,11 +15,27 @@ export default function Home() {
   const { logout } = useAuth();
   const router = useRouter();
   const [role, setRole] = useState("");
+  const [open, setOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
 
   useEffect(() => {
-      const savedrole = localStorage.getItem("role");
+    const savedrole = localStorage.getItem("role");
     if (savedrole) {
-        setRole(savedrole);
+      setRole(savedrole);
     }
   }, []);
   useEffect(() => {
@@ -47,12 +63,14 @@ export default function Home() {
           <div className="flex items-center gap-4 w-full sm:w-1/2 ml-3">
             <div className="flex">
               <Image
-                src="/images/logoLight.png"
+                src="/images/MedVault.svg"
                 alt="PDF Viewer Logo"
                 width={70}
                 height={70}
                 className="object-contain cursor-pointer"
-                onClick={()=>{router.push('/')}}
+                onClick={() => {
+                  router.push("/");
+                }}
               />
             </div>
 
@@ -105,16 +123,43 @@ export default function Home() {
         </div>
 
         {/* Right Section (Logout Button) */}
-        <div className="flex items-end h-[40px] gap-4">
+        <div className="flex items-end h-[40px] gap-4 relative">
           {(role == "admin" || role == "Admin" || role == "ADMIN") && (
-            <IoSettingsSharp
-              width={40}
-              height={40}
-              className="h-[40px] w-[30px] mr-3 cursor-pointer"
-              onClick={() => {
-                router.push("/users");
-              }}
-            />
+            <>
+              <IoSettingsSharp
+                width={40}
+                height={40}
+                className="h-[40px] w-[30px] mr-3 cursor-pointer"
+                // onClick={() => {
+                //   router.push("/users");
+                // }}
+                onClick={() => setOpen((prev) => !prev)}
+              />
+              {open && (
+                <div className="absolute right-[120px] top-[25px] mt-2 w-40 rounded-lg bg-white shadow-lg z-50">
+                  <ul className="py-2 text-sm text-gray-700">
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setOpen(false);
+                        router.push("/users");
+                      }}
+                    >
+                      Users
+                    </li>
+                    <li
+                      className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
+                      onClick={() => {
+                        setOpen(false);
+                        router.push("/logs");
+                      }}
+                    >
+                      Logs
+                    </li>
+                  </ul>
+                </div>
+              )}
+            </>
           )}
           <Button
             className="bg-[#1d76a1] text-white cursor-pointer"

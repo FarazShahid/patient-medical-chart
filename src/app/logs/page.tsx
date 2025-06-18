@@ -1,13 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import DataTable from "../componenet/usersTable";
+import DataTable from "../componenet/logsTable";
 import { useEffect, useState } from "react";
 import { Button } from "@nextui-org/react";
 import { useAuth } from "../context/AuthContext";
 import { useRouter } from "next/navigation";
 
-export default function Home() {
+export default function Logs() {
   const [searchText, setSearchText] = useState<any>("");
   const [debouncedSearch, setDebouncedSearch] = useState<any>("");
   const [loading, setIsloading] = useState(false);
