@@ -56,6 +56,28 @@ export default function Home() {
   const handleLogout = async () => {
     logout();
   };
+  const dropdownRefUser = useRef<HTMLDivElement | null>(null);
+
+useEffect(() => {
+  const handleClickOutsideUser = (event: MouseEvent) => {
+    if (
+      dropdownRefUser.current &&
+      !dropdownRefUser.current.contains(event.target as Node)
+    ) {
+      setOpen(false);
+    }
+  };
+
+  if (open) {
+    document.addEventListener("mousedown", handleClickOutsideUser);
+  } else {
+    document.removeEventListener("mousedown", handleClickOutsideUser);
+  }
+
+  return () => {
+    document.removeEventListener("mousedown", handleClickOutsideUser);
+  };
+}, [open]);
   return (
     <div className="min-h-screen bg-[#f0f0f0] pl-6 pr-6 pt-3 font-sans text-sm text-gray-700">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
@@ -136,7 +158,9 @@ export default function Home() {
                 onClick={() => setOpen((prev) => !prev)}
               />
               {open && (
-                <div className="absolute right-[120px] top-[25px] mt-2 w-40 rounded-lg bg-white shadow-lg z-50">
+                <div className="absolute right-[120px] top-[25px] mt-2 w-40 rounded-lg bg-white shadow-lg z-50"
+                ref={dropdownRefUser}
+>
                   <ul className="py-2 text-sm text-gray-700">
                     <li
                       className="px-4 py-2 hover:bg-gray-100 cursor-pointer"
