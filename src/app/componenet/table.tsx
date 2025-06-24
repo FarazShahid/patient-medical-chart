@@ -38,6 +38,8 @@ export default function DataTable({
   const [totalRecord, setTotalRecord] = useState(0);
   const router = useRouter();
   const [filePath, setFilePath] = useState("");
+  const [sortBy, setSortBy] = useState("name");
+  const [sortOrder, setSortOrder] = useState<"asc" | "desc">("asc");
   // Detect new search and reset page to 1
   useEffect(() => {
     const trimmedSearch = searchText?.trim();
@@ -65,14 +67,14 @@ export default function DataTable({
 
     try {
       // Base URL
-      let url = `${process.env.NEXT_PUBLIC_URL}/api/files?page=${page}&limit=${rowsPerPage}`;
+      let url = `${process.env.NEXT_PUBLIC_URL}/api/files?page=${page}&limit=${rowsPerPage}&sortBy=${sortBy}&sort=${sortOrder}`;
       // Add search only if searchText is present
       if (searchText.trim()) {
         url = `${
           process.env.NEXT_PUBLIC_URL
         }/api/files/search?${searchField}=${encodeURIComponent(
           searchText.trim()
-        )}&page=${page}&limit=${rowsPerPage}`;
+        )}&page=${page}&limit=${rowsPerPage}&sortBy=${sortBy}&sort=${sortOrder}`;
         setPage(1);
       }
       const token = localStorage.getItem("token");
@@ -112,7 +114,7 @@ export default function DataTable({
 
   useEffect(() => {
     getAllFiles(page, rowsPerPage, searchField || "", searchText || "");
-  }, [page, searchText, rowsPerPage, searchField]);
+  }, [page, searchText, rowsPerPage, searchField, sortBy, sortOrder]);
   const handleChange = (e: any) => {
     setRowsPerPage(Number(e.target.value));
   };
@@ -150,6 +152,17 @@ export default function DataTable({
       onAddOpen();
     }
   };
+  const handleSort = (column: string) => {
+    if (sortBy === column) {
+      // toggle sort direction
+      setSortOrder(sortOrder === "asc" ? "desc" : "asc");
+    } else {
+      setSortBy(column);
+      setSortOrder("asc");
+    }
+    setPage(1); // reset to first page on new sort
+  };
+
   return (
     <div className="flex flex-col h-[calc(100vh-145px)] gap-3 relative">
       <Table
@@ -166,11 +179,20 @@ export default function DataTable({
           <TableColumn className="" key="sr">
             Sr.
           </TableColumn>
-          <TableColumn className="" key="recordId">
-            Patient ID
+          <TableColumn
+            className="cursor-pointer"
+            key="recordId"
+            onClick={() => handleSort("recordId")}
+          >
+            Patient ID{" "}
+            {sortBy === "recordId" && (sortOrder === "asc" ? "▲" : "▼")}
           </TableColumn>
-          <TableColumn className="" key="name">
-            Name
+          <TableColumn
+            className="cursor-pointer"
+            key="name"
+            onClick={() => handleSort("name")}
+          >
+            Name {sortBy === "name" && (sortOrder === "asc" ? "▲" : "▼")}
           </TableColumn>
           <TableColumn className="" key="dob">
             DOB
@@ -211,13 +233,13 @@ export default function DataTable({
                   {columnKey === "recordId" && item?.recordId ? (
                     <span> {item?.recordId}</span>
                   ) : columnKey === "filename" && item.path ? (
-                      <Image
-                        src={"/images/pdf-logo.svg"}
-                        width={23}
-                        height={23}
-                        alt="pdf"
-                        className="ml-0.5 h-auto"
-                      />
+                    <Image
+                      src={"/images/pdf-logo.svg"}
+                      width={23}
+                      height={23}
+                      alt="pdf"
+                      className="ml-0.5 h-auto"
+                    />
                   ) : (
                     getKeyValue(item, columnKey)
                   )}
